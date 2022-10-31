@@ -20,7 +20,7 @@ def get_file(url='',file_path='',log_file=''):
 	else:
 		file_name='FILE_ERROR'
 		error=1
-	with open(f'{log_file}\\{file_name}-{now}.log', 'w') as f_log:
+	with open(os.path.join(log_file,f'{file_name}-{now}.log'), 'w') as f_log:
 		with redirect_stdout(f_log) as log:	
 			if error==1:
 				print(f'{now}:Failed getting file name for url:({url})')
@@ -46,7 +46,7 @@ def get_file(url='',file_path='',log_file=''):
 			r = requests.get(url, allow_redirects=True, headers=headers)
 			now=datetime.now().strftime("%d/%m/%Y %H:%M:%S")
 			print (f'{now}:End getting file {full_name}')
-			with open(f'{file_path}\\{full_name}', 'wb') as f:
+			with open(os.path.join(file_path,full_name), 'wb') as f:
 				f.write(r.content)
 				f.close()
 				now=datetime.now().strftime("%d/%m/%Y %H:%M:%S")
