@@ -103,10 +103,11 @@ if os.path.exists(cfg):
         if url_list:
             for url in url_list:
                 base_log(f'Getting:{url}')
-                get_file(url=url, file_path=data['file_path'], log_file=data['log_path'])
+                get_file(url=url, file_path=file_path, log_file=log_path)
                 base_log(f'Finished Getting:{url}')
         else:
             base_log('URLs list is empty!')
+        config.close()
 else:
     with open(cfg, 'w') as config:
         if env == 'Linux':
