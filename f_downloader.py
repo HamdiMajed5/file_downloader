@@ -1,6 +1,5 @@
 import requests, re
 from datetime import datetime
-from contextlib import redirect_stdout
 import os.path
 import platform
 import json
@@ -26,61 +25,59 @@ def get_file(url='', file_path='', log_file=''):
         file_name = 'FILE_ERROR'
         error = 1
     with open(os.path.join(log_file, file_name + '-' + str(now) + '.log'), 'w') as f_log:
-        with redirect_stdout(f_log) as log:
-            if error == 1:
-                print(str(now) + ':Failed getting file name for url:(' + str(url) +')')
-                return 0
-            full_name = file_name + '.' + re.findall(extension_pattern, url)[-1]
-            log_file = file_name + '-' + str(now) + '.log'
-            headers = {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:106.0) Gecko/20100101 Firefox/106.0',
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-                'Accept-Language': 'en-US,en;q=0.5',
-                'Accept-Encoding': 'gzip, deflate, br',
-                'Upgrade-Insecure-Requests': '1',
-                'Connection': 'keep-alive',
-                'Sec-Fetch-Dest': 'document',
-                'Sec-Fetch-Mode': 'navigate',
-                'Sec-Fetch-Site': 'none',
-                'Sec-Fetch-User': '?1'
-            }
+        if error == 1:
+            f_log.write(str(now) + ':Failed getting file name for url:(' + str(url) +')\n')
+            return 0
+        full_name = file_name + '.' + re.findall(extension_pattern, url)[-1]
+        log_file = file_name + '-' + str(now) + '.log'
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:106.0) Gecko/20100101 Firefox/106.0',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.5',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'Upgrade-Insecure-Requests': '1',
+            'Connection': 'keep-alive',
+            'Sec-Fetch-Dest': 'document',
+            'Sec-Fetch-Mode': 'navigate',
+            'Sec-Fetch-Site': 'none',
+            'Sec-Fetch-User': '?1'
+        }
 
+        now = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        f_log.write(str(now) + ':Start getting file ' + full_name + '\n')
+        r=None
+        try:
+            r = requests.get(url, allow_redirects=True, headers=headers)
+            r.raise_for_status()
             now = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-            print(str(now) + ':Start getting file ' + full_name)
-            r=None
-            try:
-                r = requests.get(url, allow_redirects=True, headers=headers)
-                r.raise_for_status()
+        except requests.exceptions.RequestException as err:
+            f_log.write( str(now) + ':HTTP Error <' +url + '> Cause:'+ str( err ) +'\n')
+        except requests.exceptions.HTTPError as errh:
+            f_log.write(str(now) + ':HTTP Error <' + url + '> Cause:'+ str( errh) + '\n')
+        except requests.exceptions.ConnectionError as errc:
+            f_log.write(str(now) + ':HTTP Connection Error<' + url +'> Cause:'+ str( errc) +'\n')
+        except requests.exceptions.Timeout as errt:
+            f_log.write(str(now) + ':HTTP Timeout Error <' + url + '> Cause:'+ str( errt) + '\n')
+        except requests.exceptions.MissingSchema as errm:
+            f_log.write(str(now) + ':HTTP Invalid URL Error <' + url + '> Cause:'+ str( errm ) + '\n')
+        now = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        f_log.write(str(now) + ':End getting file ' + full_name + '\n' )
+        if r:
+            with open(os.path.join(file_path, full_name), 'wb') as f:
+                f.write(r.content)
+                f.close()
                 now = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-            except requests.exceptions.RequestException as err:
-                print( str(now) + ':HTTP Error <' +url + '> Cause:', err)
-            except requests.exceptions.HTTPError as errh:
-                print(str(now) + ':HTTP Error <' + url + '> Cause:', errh)
-            except requests.exceptions.ConnectionError as errc:
-                print(str(now) + ':HTTP Connection Error<' + url +'> Cause:', errc)
-            except requests.exceptions.Timeout as errt:
-                print(str(now) + ':HTTP Timeout Error <' + url + '> Cause:', errt)
-            except requests.exceptions.MissingSchema as errm:
-                print(str(now) + ':HTTP Invalid URL Error <' + url + '> Cause:', errm)
+                f_log.write(str(now) + ':File ' + full_name + ' downloaded successfully\n')
+        else:
             now = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-            print(str(now) + ':End getting file ' + full_name )
-            if r:
-                with open(os.path.join(file_path, full_name), 'wb') as f:
-                    f.write(r.content)
-                    f.close()
-                    now = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-                    print(str(now) + ':File ' + full_name + ' downloaded successfully')
-            else:
-                now = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-                print(str(now) + ':File ' + full_name + ' Failed to Download')
-            log.close()
+            f_log.write(str(now) + ':File ' + full_name + ' Failed to Download\n')
         f_log.close()
 
 
 
 def base_log(txt):
     now = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-    text=(str(now) + txt +'\n')
+    text=(str(now) + ':' + txt +'\n')
     base_log_file=os.path.join(base_path,'log')
     if not os.path.exists(base_log_file):
         os.makedirs(base_log_file)
@@ -95,7 +92,7 @@ def create_dir(path,msg=None):
         base_log(msg)
 
 
-def no_cli(args):
+def no_cli():
     if os.path.exists(cfg):
         with open(cfg, 'r', encoding='utf-8', errors='ignore') as config:
             data={}
@@ -112,7 +109,7 @@ def no_cli(args):
                 for url in url_list:
                     base_log('Getting:'+ url)
                     get_file(url=url, file_path=file_path, log_file=log_path)
-                    base_log('Finished Getting:' +{url})
+                    base_log('Finished Getting:' +url)
             else:
                 base_log('URLs list is empty!')
             config.close()
