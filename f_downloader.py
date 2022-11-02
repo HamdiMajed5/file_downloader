@@ -150,7 +150,7 @@ def from_cli(args=None):
 def main():
     parser = argparse.ArgumentParser(
         prog='File Downloader',
-        description=f"{company} File Downloader Program version:{version} by Eng.Hamdi Majed"
+        description=company +' File Downloader Program version:' + str(version) +' by Eng.Hamdi Majed"
     )
     parser.add_argument("-u", "--url",metavar='url', type=str, nargs=1,
                         help="Url to Download the file it is required if you pass arguments.")
