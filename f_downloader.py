@@ -4,9 +4,15 @@ from contextlib import redirect_stdout
 import os.path
 import platform
 import json
+import sys
+import argparse
+
+company='Datagear LLC'
+version=1.1
 
 env = platform.system()
 base_path = os.path.dirname(os.path.abspath(__file__))
+cfg = 'config.json'
 
 def get_file(url='', file_path='', log_file=''):
     now = datetime.now().strftime("%d-%m-%Y_%H_%M_%S")
@@ -63,7 +69,7 @@ def get_file(url='', file_path='', log_file=''):
                     f.write(r.content)
                     f.close()
                     now = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-                    print(f'{now}:File {full_name} donloaded successfully')
+                    print(f'{now}:File {full_name} downloaded successfully')
             else:
                 now = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
                 print(f'{now}:File {full_name} Failed to Download')
@@ -71,7 +77,7 @@ def get_file(url='', file_path='', log_file=''):
         f_log.close()
 
 
-cfg = 'config.json'
+
 def base_log(txt):
     now = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
     text=(f'{now}: {txt}\n')
@@ -82,43 +88,88 @@ def base_log(txt):
     f.write(text)
     f.close()
 
+def create_dir(path,msg=None):
+    if not os.path.exists(path):
+        os.makedirs(path)
+    if msg:
+        base_log(msg)
 
 
-if os.path.exists(cfg):
-    with open(cfg, 'r', encoding='utf-8', errors='ignore') as config:
-        data={}
-        try:
-            data = json.load(config, strict=False)
-        except json.decoder.JSONDecodeError as jsonerr:  # includes simplejson.decoder.JSONDecodeError
-            base_log('Decoding JSON has failed:'+ str(jsonerr))
-        log_path=data.get('log_path',os.path.join(base_path,'log'))
-        file_path=data.get('file_path',os.path.join(base_path,'files'))
-        if not os.path.exists(log_path):
-            os.makedirs(log_path)
-            base_log("Make log Path directory")
-        if not os.path.exists(file_path):
-            os.makedirs(file_path)
-            base_log("Make file Path directory")
-        url_list = data.get('urls',[])
-        if url_list:
-            for url in url_list:
-                base_log(f'Getting:{url}')
-                get_file(url=url, file_path=file_path, log_file=log_path)
-                base_log(f'Finished Getting:{url}')
-        else:
-            base_log('URLs list is empty!')
-        config.close()
-else:
-    with open(cfg, 'w') as config:
-        if env == 'Linux':
-            txt = '{\n \t"file_path":"' + os.path.join(base_path, 'files') + '",\n\t"log_path":"' + os.path.join(
-                base_path, 'log') + '",' \
-                                    '\n\t"urls":["http://datagearbi.com/img/Mazen/logo.png",' \
-                                    '"https://www.facebook.com/favicon.ico"]\n} '
-        else:
-            txt = '{\n \t"file_path":"c:\\\\file_downloader\\\\files",\n\t"log_path":"c:\\\\file_downloader\\\\log",' \
-                  '\n\t"urls":["http://datagearbi.com/img/Mazen/logo.png","https://www.facebook.com/favicon.ico"]\n} '
-        config.write(txt)
-        print('Please Edit config.json file and add your file full URL')
-        base_log('Create/Update config.json file')
-        config.close()
+def no_cli(args):
+    if os.path.exists(cfg):
+        with open(cfg, 'r', encoding='utf-8', errors='ignore') as config:
+            data={}
+            try:
+                data = json.load(config, strict=False)
+            except json.decoder.JSONDecodeError as jsonerr:  # includes simplejson.decoder.JSONDecodeError
+                base_log('Decoding JSON has failed:'+ str(jsonerr))
+            log_path=data.get('log_path',os.path.join(base_path,'log'))
+            file_path=data.get('file_path',os.path.join(base_path,'files'))
+            create_dir(log_path,"Make log Path directory")
+            create_dir(file_path,"Make file Path directory")
+            url_list = data.get('urls',[])
+            if url_list:
+                for url in url_list:
+                    base_log(f'Getting:{url}')
+                    get_file(url=url, file_path=file_path, log_file=log_path)
+                    base_log(f'Finished Getting:{url}')
+            else:
+                base_log('URLs list is empty!')
+            config.close()
+    else:
+        with open(cfg, 'w') as config:
+            if env == 'Linux':
+                txt = '{\n \t"file_path":"' + os.path.join(base_path, 'files') + '",\n\t"log_path":"' + os.path.join(
+                    base_path, 'log') + '",' \
+                                        '\n\t"urls":["http://datagearbi.com/img/Mazen/logo.png",' \
+                                        '"https://www.facebook.com/favicon.ico"]\n} '
+            else:
+                txt = '{\n \t"file_path":"c:\\\\file_downloader\\\\files",\n\t"log_path":"c:\\\\file_downloader\\\\log",' \
+                      '\n\t"urls":["http://datagearbi.com/img/Mazen/logo.png","https://www.facebook.com/favicon.ico"]\n} '
+            config.write(txt)
+            print('Please Edit config.json file and add your file full URL')
+            base_log('Create/Update config.json file')
+            config.close()
+
+def from_cli(args=None):
+    data={
+        'url':args.url[0] if args.url else None,
+        'file_path':args.file[0] if args.file else os.path.join(base_path, 'files') ,
+        'log_path':args.log[0] if args.log else os.path.join(base_path, 'log')
+    }
+    url = data.get('url')
+    if url is None:
+        base_log('URL is not passed')
+        return 0
+    log_path = data.get('log_path')
+    file_path = data.get('file_path')
+    create_dir(log_path, "Make log Path directory")
+    create_dir(file_path, "Make file Path directory")
+    return get_file(url,file_path,log_path)
+
+def main():
+    parser = argparse.ArgumentParser(
+        prog='File Downloader',
+        description=f"{company} File Downloader Program version:{version} by Eng.Hamdi Majed"
+    )
+    parser.add_argument("-u", "--url",metavar='url', type=str, nargs=1,
+                        help="Url to Download the file it is required if you pass arguments.")
+    parser.add_argument("-f", "--file", type=str, nargs=1,metavar='file_path',
+                        help="Folder path to download file to.")
+    parser.add_argument("-l", "--log", type=str, nargs=1,metavar='log_path',
+                        help="Logs folder path.")
+
+    args = parser.parse_args()
+    try:
+        test=sys.argv[1], args
+        if test:
+            return from_cli(args)
+    except IndexError:
+        return no_cli()
+
+
+if __name__ == "__main__":
+    # calling the main function
+    main()
+
+
