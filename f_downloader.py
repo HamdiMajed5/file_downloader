@@ -25,13 +25,13 @@ def get_file(url='', file_path='', log_file=''):
     else:
         file_name = 'FILE_ERROR'
         error = 1
-    with open(os.path.join(log_file, f'{file_name}-{now}.log'), 'w') as f_log:
+    with open(os.path.join(log_file, file_name + '-' + str(now) + '.log'), 'w') as f_log:
         with redirect_stdout(f_log) as log:
             if error == 1:
-                print(f'{now}:Failed getting file name for url:({url})')
+                print(str(now) + ':Failed getting file name for url:(' + str(url) +')')
                 return 0
             full_name = file_name + '.' + re.findall(extension_pattern, url)[-1]
-            log_file = f'{file_name}-{now}.log'
+            log_file = file_name + '-' + str(now) + '.log'
             headers = {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:106.0) Gecko/20100101 Firefox/106.0',
                 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
@@ -46,33 +46,33 @@ def get_file(url='', file_path='', log_file=''):
             }
 
             now = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-            print(f'{now}:Start getting file {full_name}')
+            print(str(now) + ':Start getting file ' + full_name)
             r=None
             try:
                 r = requests.get(url, allow_redirects=True, headers=headers)
                 r.raise_for_status()
                 now = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
             except requests.exceptions.RequestException as err:
-                print(f'{now}:HTTP Error <{url}> Cause:', err)
+                print( str(now) + ':HTTP Error <' +url + '> Cause:', err)
             except requests.exceptions.HTTPError as errh:
-                print(f'{now}:HTTP Error <{url}> Cause:', errh)
+                print(str(now) + ':HTTP Error <' + url + '> Cause:', errh)
             except requests.exceptions.ConnectionError as errc:
-                print(f'{now}:HTTP Connection Error<{url}> Cause:', errc)
+                print(str(now) + ':HTTP Connection Error<' + url +'> Cause:', errc)
             except requests.exceptions.Timeout as errt:
-                print(f'{now}:HTTP Timeout Error <{url}> Cause:', errt)
+                print(str(now) + ':HTTP Timeout Error <' + url + '> Cause:', errt)
             except requests.exceptions.MissingSchema as errm:
-                print(f'{now}:HTTP Invalid URL Error <{url}> Cause:', errm)
+                print(str(now) + ':HTTP Invalid URL Error <' + url + '> Cause:', errm)
             now = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-            print(f'{now}:End getting file {full_name}')
+            print(str(now) + ':End getting file ' + full_name )
             if r:
                 with open(os.path.join(file_path, full_name), 'wb') as f:
                     f.write(r.content)
                     f.close()
                     now = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-                    print(f'{now}:File {full_name} downloaded successfully')
+                    print(str(now) + ':File ' + full_name + ' downloaded successfully')
             else:
                 now = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-                print(f'{now}:File {full_name} Failed to Download')
+                print(str(now) + ':File ' + full_name + ' Failed to Download')
             log.close()
         f_log.close()
 
@@ -80,7 +80,7 @@ def get_file(url='', file_path='', log_file=''):
 
 def base_log(txt):
     now = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-    text=(f'{now}: {txt}\n')
+    text=(str(now) + txt +'\n')
     base_log_file=os.path.join(base_path,'log')
     if not os.path.exists(base_log_file):
         os.makedirs(base_log_file)
@@ -110,9 +110,9 @@ def no_cli(args):
             url_list = data.get('urls',[])
             if url_list:
                 for url in url_list:
-                    base_log(f'Getting:{url}')
+                    base_log('Getting:'+ url)
                     get_file(url=url, file_path=file_path, log_file=log_path)
-                    base_log(f'Finished Getting:{url}')
+                    base_log('Finished Getting:' +{url})
             else:
                 base_log('URLs list is empty!')
             config.close()
