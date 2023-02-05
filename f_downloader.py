@@ -18,6 +18,7 @@ def get_file(url='', file_path='', log_file=''):
     file_pattern = r'[\w-]+?(?=\.)'
     extension_pattern = r'[^\\]*\.(\w+)'
     file_name = re.findall(file_pattern, url)
+    ext=re.findall(extension_pattern, url)[-1]
     error = 0
     if file_name:
         file_name = file_name[-1]
@@ -68,6 +69,11 @@ def get_file(url='', file_path='', log_file=''):
                 f.close()
                 now = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
                 f_log.write(str(now) + ':File ' + full_name + ' downloaded successfully\n')
+                if str(ext).upper()=='XLSX':
+                    xlsx_to_xls(os.path.join(file_path, full_name))
+                now = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                f_log.write(str(now) + ':File ' + full_name + ' converted to xls successfully\n')
+
         else:
             now = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
             f_log.write(str(now) + ':File ' + full_name + ' Failed to Download\n')
@@ -143,6 +149,16 @@ def from_cli(args=None):
     create_dir(log_path, "Make log Path directory")
     create_dir(file_path, "Make file Path directory")
     return get_file(url,file_path,log_path)
+
+def xlsx_to_xls(infile):
+    import openpyxl
+    #workbook = openpyxl.load_workbook(infile)
+    outfile = f"{infile.split('.')[0]}.xls"
+    #workbook.save(outfile)
+    import pandas as pd
+
+    df = pd.read_excel(infile, header=None)
+    df.to_excel(outfile, index=False, header=False)
 
 def main():
     parser = argparse.ArgumentParser(
